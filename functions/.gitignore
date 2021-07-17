@@ -1,0 +1,15 @@
+# Log files
+**/*.log
+
+# Compiled JavaScript files
+/lib/
+**/*.js
+**/*.js.map
+
+!eslint/*.js
+
+# Except the ESLint config file
+!.eslintrc.js
+
+# Node.js dependency directory
+node_modules/
