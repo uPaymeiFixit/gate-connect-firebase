@@ -28,19 +28,21 @@ interface UserAddress extends Address, DocumentData {
 
 // /users/{userId}
 interface User extends DocumentData {
-  permissible_gates: Record<
-    string,
-    {
+  // permissible_gates: Record<
+  //   string,
+  //   {
+  //     address_reference: DocumentReference<DocumentData>;
+  //     gate_reference: DocumentReference<DocumentData>;
+  //     verified: boolean;
+  //   }
+  // >;
+  permissible_gates: {
+    [key: string]: {
       address_reference: DocumentReference<DocumentData>;
       gate_reference: DocumentReference<DocumentData>;
       verified: boolean;
-    }
-  >;
-  // permissible_gates: {
-  //   address_reference: DocumentReference<DocumentData>;
-  //   gate_reference: DocumentReference<DocumentData>;
-  //   verified: boolean;
-  // }[];
+    };
+  };
 }
 
 // /users/{userId}/addresses/{addressId}/verifications/verification-id
@@ -104,8 +106,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
   // Get user and verify that it exists
   const user_reference = database.collection("users").doc(context.auth.uid);
   const user_snapshot = await user_reference.get();
-  const user_data = user_snapshot.data();
-  // const user_data = user_snapshot.data() as User; TODO: make this work
+  const user_data = user_snapshot.data() as User;
   if (!user_snapshot.exists || user_data === undefined) {
     functions.logger.error(`COULD NOT FIND USER FOR UID ${context.auth.uid}`);
     return { status: "error", code: 500, message: "Could not find user data. Does it exist?" };
@@ -132,6 +133,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
 });
 
 // Accepts {address_reference, verification_code} and checks to verify the address
+// TODO: if user adds address that belongs to a gate group they're already associated with, don't allow them to add it
 export const verifyAddress = functions.https.onCall(
   async (submitted_data: VerifyAddressData, context): Promise<HTTPResponse> => {
     // Verify user is logged in
@@ -155,7 +157,7 @@ export const verifyAddress = functions.https.onCall(
       const user_reference = database.collection("users").doc(context.auth.uid);
       const user_snapshot = await user_reference.get();
       const user_data = user_snapshot.data();
-      // const user_data = user_snapshot.data() as User; TODO: make this work
+      // const user_data = user_snapshot.data() as User; // TODO: make this work
       if (!user_snapshot.exists || user_data === undefined) {
         functions.logger.error(`COULD NOT FIND USER FOR UID ${context.auth.uid}`);
         return { status: "error", code: 500, message: "Could not find user data. Does it exist?" };
