@@ -115,7 +115,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
 
   // Make sure user is authorized to open this gate
   if (user_data.permissible_gates[gate_id].verified) {
-    // Get gata document and verify it exists
+    // Get gate document and verify it exists
     const gate_reference = user_data.permissible_gates[gate_id].gate_reference;
     const gate_snapshot = await gate_reference.get();
     const gate_data = gate_snapshot.data() as Gate;
@@ -135,7 +135,6 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
 });
 
 export const pulseLight = functions.https.onRequest((request, response) => {
-  // await _pulseLight(request.body.split(":")[0], request.body.split(":")[1]);
   if (typeof request.query.label === "string" && typeof request.query.color === "string")
     _pulseLight(request.query.label, request.query.color);
   response.end();
@@ -151,7 +150,6 @@ function _pulseLight(light_label: string, color: string) {
 }
 
 // Accepts {address_reference, verification_code} and checks to verify the address
-// TODO: if user adds address that belongs to a gate group they're already associated with, don't allow them to add it
 export const verifyAddress = functions.https.onCall(
   async (submitted_data: VerifyAddressData, context): Promise<HTTPResponse> => {
     // Verify user is logged in
@@ -276,7 +274,6 @@ async function createPartialUserData(
 function createVerificationData(): AddressVerification {
   return {
     created_at: admin.firestore.FieldValue.serverTimestamp(),
-    // TODO: Use Crypto to generate an alphanumeric code
     verification_code: (Math.floor(Math.random() * 10000) + 10000).toString().substr(1),
     verified_at: null,
     mailed_at: null,
