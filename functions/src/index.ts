@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { DocumentReference, DocumentData, FieldValue } from "@google-cloud/firestore";
+import axios from "axios";
 
 admin.initializeApp();
 const database = admin.firestore();
@@ -124,6 +125,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
     }
 
     // TODO: Open gate
+    _pulseLight(gate_data.api_key.split(":")[0], gate_data.api_key.split(":")[1]);
     functions.logger.info(`OPENING GATE ${gate_id} WITH API KEY:`, gate_data.api_key);
 
     return { status: "success", code: 200 };
@@ -131,6 +133,22 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
     return { status: "error", code: 401, message: "You are not authorized to open this gate." };
   }
 });
+
+export const pulseLight = functions.https.onRequest((request, response) => {
+  // await _pulseLight(request.body.split(":")[0], request.body.split(":")[1]);
+  if (typeof request.query.label === "string" && typeof request.query.color === "string")
+    _pulseLight(request.query.label, request.query.color);
+  response.end();
+});
+
+function _pulseLight(light_label: string, color: string) {
+  void axios.post(`https://api.lifx.com/v1/lights/label:${light_label}/effects/breathe`, `color=${color}&period=3`, {
+    headers: {
+      Authorization: `Bearer ${functions.config().lifx.api_key}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
+}
 
 // Accepts {address_reference, verification_code} and checks to verify the address
 // TODO: if user adds address that belongs to a gate group they're already associated with, don't allow them to add it
@@ -276,7 +294,7 @@ async function getAssociatedGateGroups(address: Address) {
       if (
         address.postal_code === permissible_address.postal_code &&
         address.country === permissible_address.country &&
-        address.thoroughfare.includes(permissible_address.thoroughfare) && // TODO: Re-enable and unit-test this one
+        address.thoroughfare.includes(permissible_address.thoroughfare) &&
         address.premise > permissible_address.premise_range_start &&
         address.premise < permissible_address.premise_range_stop
       ) {
