@@ -86,7 +86,7 @@ interface Gate extends DocumentData {
 
 interface VerifyAddressData {
   verification_code: string;
-  address_reference: DocumentReference;
+  address_reference_path: string;
 }
 
 // Create firestore user when firebase user is created
@@ -167,7 +167,10 @@ export const verifyAddress = functions.https.onCall(
     if (!context.auth) return { status: "error", code: 401, message: "Not signed in" };
 
     // Verify submitted address reference has a valid verification document
-    const verification_reference = submitted_data.address_reference.collection("verifications").doc("verification-id");
+    const verification_reference = database
+      .doc(submitted_data.address_reference_path)
+      .collection("verifications")
+      .doc("verification-id");
     const verification_snapshot = await verification_reference.get();
     const verification_data = verification_snapshot.data();
     if (!verification_snapshot.exists || verification_data == null) {
