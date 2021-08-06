@@ -202,7 +202,7 @@ export const verifyAddress = functions.https.onCall(
       // Create batch and update verification elements on User and Verification documents
       const batch = database.batch();
       batch.update(user_reference, user_data);
-      batch.update(verification_reference, { verification_data: Date() });
+      batch.update(verification_reference, { verified_at: admin.firestore.FieldValue.serverTimestamp() });
 
       // Try to commit changes
       try {
