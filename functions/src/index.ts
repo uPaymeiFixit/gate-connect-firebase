@@ -232,7 +232,7 @@ export const addAddress = functions.https.onCall(async (submitted_address_data, 
   // Get references to documents we need to touch
   const user_reference = database.collection("users").doc(context.auth.uid);
   const address_reference = user_reference.collection("addresses").doc();
-  const verification_reference = address_reference.collection("verifications").doc();
+  const verification_reference = address_reference.collection("verifications").doc("verification-id");
 
   // Create data for documents we need to touch
   const address_data = await createAddressData(submitted_address_data);
