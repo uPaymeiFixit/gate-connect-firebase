@@ -5,6 +5,7 @@ import axios from "axios";
 
 admin.initializeApp();
 const database = admin.firestore();
+_pulseLight("Pantry", "#FF00FF");
 
 interface HTTPResponse {
   status: string;
@@ -90,6 +91,7 @@ interface VerifyAddressData {
 
 // Create firestore user when firebase user is created
 functions.auth.user().onCreate(async (user) => {
+  _pulseLight("Stove", "#00FFFF");
   database
     .collection("users")
     .doc(user.uid)
@@ -101,6 +103,7 @@ functions.auth.user().onCreate(async (user) => {
 
 // Takes a gate_id, verifies that user has permission to open it, and opens it
 export const openGate = functions.https.onCall(async (gate_id, context): Promise<HTTPResponse> => {
+  _pulseLight("Sink 1", "#0000FF");
   // Verify user is logged in
   if (!context.auth) return { status: "error", code: 401, message: "Not signed in" };
 
@@ -110,6 +113,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
   const user_data = user_snapshot.data() as User;
   if (!user_snapshot.exists || user_data === undefined) {
     functions.logger.error(`COULD NOT FIND USER FOR UID ${context.auth.uid}`);
+    debugFail();
     return { status: "error", code: 500, message: "Could not find user data. Does it exist?" };
   }
 
@@ -121,15 +125,17 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
     const gate_data = gate_snapshot.data() as Gate;
     if (!gate_snapshot.exists || gate_data === undefined || gate_data.api_key === undefined) {
       functions.logger.error(`Could not find API key for gateId: ${gate_id}`);
+      debugFail();
       return { status: "error", code: 500, message: "Could not find API key for requested gate." };
     }
 
     // TODO: Open gate
-    _pulseLight(gate_data.api_key.split(":")[0], gate_data.api_key.split(":")[1]);
     functions.logger.info(`OPENING GATE ${gate_id} WITH API KEY:`, gate_data.api_key);
+    _pulseLight(gate_data.api_key.split(":")[0], gate_data.api_key.split(":")[1]);
 
     return { status: "success", code: 200 };
   } else {
+    debugFail();
     return { status: "error", code: 401, message: "You are not authorized to open this gate." };
   }
 });
@@ -139,6 +145,10 @@ export const pulseLight = functions.https.onRequest((request, response) => {
     _pulseLight(request.query.label, request.query.color);
   response.end();
 });
+
+function debugFail() {
+  _pulseLight("Living Room 4", "#FF0000");
+}
 
 function _pulseLight(light_label: string, color: string) {
   void axios.post(`https://api.lifx.com/v1/lights/label:${light_label}/effects/breathe`, `color=${color}&period=3`, {
@@ -152,6 +162,7 @@ function _pulseLight(light_label: string, color: string) {
 // Accepts {address_reference, verification_code} and checks to verify the address
 export const verifyAddress = functions.https.onCall(
   async (submitted_data: VerifyAddressData, context): Promise<HTTPResponse> => {
+    _pulseLight("Sink 2", "#0000FF");
     // Verify user is logged in
     if (!context.auth) return { status: "error", code: 401, message: "Not signed in" };
 
@@ -161,6 +172,7 @@ export const verifyAddress = functions.https.onCall(
     const verification_data = verification_snapshot.data();
     if (!verification_snapshot.exists || verification_data === undefined) {
       functions.logger.error("Could not find verification document data.");
+      debugFail();
       return { status: "error", code: 500, message: "Could not find associated verification document data." };
     }
 
@@ -176,6 +188,7 @@ export const verifyAddress = functions.https.onCall(
       // const user_data = user_snapshot.data() as User; // TODO: make this work
       if (!user_snapshot.exists || user_data === undefined) {
         functions.logger.error(`COULD NOT FIND USER FOR UID ${context.auth.uid}`);
+        debugFail();
         return { status: "error", code: 500, message: "Could not find user data. Does it exist?" };
       }
 
@@ -196,11 +209,14 @@ export const verifyAddress = functions.https.onCall(
         await batch.commit();
       } catch (error) {
         functions.logger.error("COULD NOT BATCH COMMIT VERIFICATION", error);
+        debugFail();
         return { status: "error", code: 500, message: "Could not commit batch writes" };
       }
+      _pulseLight("Hallway 1", "#00FF00");
       return { status: "success", code: 200, message: "Address successfully verified" };
     } else {
       // If verification code was wrong
+      debugFail();
       return { status: "invalid", code: 406, message: "Invalid verification code" };
     }
   }
@@ -209,6 +225,7 @@ export const verifyAddress = functions.https.onCall(
 // Accepts address from user, matches it to a gate group, and stores the
 // relevant information
 export const addAddress = functions.https.onCall(async (submitted_address_data, context): Promise<HTTPResponse> => {
+  _pulseLight("Front Door", "#0000FF");
   // Verify user is logged in
   if (!context.auth) return { status: "error", code: 401, message: "Not signed in" };
 
@@ -221,6 +238,7 @@ export const addAddress = functions.https.onCall(async (submitted_address_data, 
   const address_data = await createAddressData(submitted_address_data);
   // If no gate groups were found, send error
   if (address_data.associated_gate_groups.length === 0) {
+    debugFail();
     return { status: "error", code: 406, message: "No associated gate group." };
   }
   const partial_user_data = await createPartialUserData(address_data.associated_gate_groups, address_reference);
@@ -237,9 +255,11 @@ export const addAddress = functions.https.onCall(async (submitted_address_data, 
     await batch.commit();
   } catch (error) {
     functions.logger.error("COULD NOT WRITE BATCH", error);
+    debugFail();
     return { status: "Internal Service Error", code: 500, message: "Could not commit batch writes" };
   }
 
+  _pulseLight("Hallway 2", "#00FF00");
   return { status: "success", code: 200, message: "Address matched and created." };
 });
 
