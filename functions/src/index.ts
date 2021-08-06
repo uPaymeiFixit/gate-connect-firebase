@@ -196,9 +196,12 @@ export const verifyAddress = functions.https.onCall(
       }
 
       // Search through permissible gates on a User to figure out which one they verified and set verified to true
-      for (const gate of user_data.permissible_gates) {
-        if (gate.address_reference === submitted_data.address_reference) {
-          gate.verified = true;
+      for (const gate_id in user_data.permissible_gates) {
+        if (Object.prototype.hasOwnProperty.call(user_data.permissible_gates, gate_id)) {
+          const gate = user_data.permissible_gates[gate_id];
+          if (gate.address_reference.path === submitted_data.address_reference_path) {
+            gate.verified = true;
+          }
         }
       }
 
