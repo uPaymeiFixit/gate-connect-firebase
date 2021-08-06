@@ -111,7 +111,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
   const user_reference = database.collection("users").doc(context.auth.uid);
   const user_snapshot = await user_reference.get();
   const user_data = user_snapshot.data() as User;
-  if (!user_snapshot.exists || user_data === undefined) {
+  if (!user_snapshot.exists || user_data == null) {
     functions.logger.error(`COULD NOT FIND USER FOR UID ${context.auth.uid}`);
     debugFail();
     return { status: "error", code: 500, message: "Could not find user data. Does it exist?" };
@@ -123,7 +123,7 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
     const gate_reference = user_data.permissible_gates[gate_id].gate_reference;
     const gate_snapshot = await gate_reference.get();
     const gate_data = gate_snapshot.data() as Gate;
-    if (!gate_snapshot.exists || gate_data === undefined || gate_data.api_key === undefined) {
+    if (!gate_snapshot.exists || gate_data == null || gate_data.api_key == null) {
       functions.logger.error(`Could not find API key for gateId: ${gate_id}`);
       debugFail();
       return { status: "error", code: 500, message: "Could not find API key for requested gate." };
@@ -170,7 +170,7 @@ export const verifyAddress = functions.https.onCall(
     const verification_reference = submitted_data.address_reference.collection("verifications").doc("verification-id");
     const verification_snapshot = await verification_reference.get();
     const verification_data = verification_snapshot.data();
-    if (!verification_snapshot.exists || verification_data === undefined) {
+    if (!verification_snapshot.exists || verification_data == null) {
       functions.logger.error("Could not find verification document data.");
       debugFail();
       return { status: "error", code: 500, message: "Could not find associated verification document data." };
@@ -179,14 +179,14 @@ export const verifyAddress = functions.https.onCall(
     // Check if verification code matches
     if (
       verification_data.verification_code === submitted_data.verification_code &&
-      verification_data.verified_at === null
+      verification_data.verified_at == null
     ) {
       // Get user and verify that it exists
       const user_reference = database.collection("users").doc(context.auth.uid);
       const user_snapshot = await user_reference.get();
       const user_data = user_snapshot.data();
       // const user_data = user_snapshot.data() as User; // TODO: make this work
-      if (!user_snapshot.exists || user_data === undefined) {
+      if (!user_snapshot.exists || user_data == null) {
         functions.logger.error(`COULD NOT FIND USER FOR UID ${context.auth.uid}`);
         debugFail();
         return { status: "error", code: 500, message: "Could not find user data. Does it exist?" };
