@@ -130,9 +130,15 @@ export const openGate = functions.https.onCall(async (gate_id, context): Promise
     }
 
     // TODO: Open gate
-    functions.logger.info(`OPENING GATE ${gate_id} WITH API KEY:`, gate_data.api_key);
-    _pulseLight(gate_data.api_key.split(":")[0], gate_data.api_key.split(":")[1]);
-
+    if (gate_data.url != null) {
+      // If gate contains a URL, just GET that to open the gate
+      void axios.get(gate_data.url);
+      functions.logger.info(`OPENING GATE ${gate_id} BY GETTING URL:`, gate_data.url);
+      _pulseLight(gate_data.api_key.split(":")[0], gate_data.api_key.split(":")[1]);
+    } else {
+      functions.logger.info(`OPENING GATE ${gate_id} WITH API KEY:`, gate_data.api_key);
+      _pulseLight(gate_data.api_key.split(":")[0], gate_data.api_key.split(":")[1]);
+    }
     return { status: "success", code: 200 };
   } else {
     debugFail();
